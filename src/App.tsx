@@ -1,25 +1,29 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import React, { FC, useState } from 'react';
+import PersonalDetails from './PersonalDetails';
+import { Container } from "reactstrap";
+import { IPersonState } from './State';
 
-function App() {
+const initialPerson: IPersonState = {
+  FirstName: "",
+  LastName: "",
+  Address1: "",
+  Address2: "",
+  Town: "",
+  County: "",
+  PhoneNumber: "",
+  Postcode: "",
+  DateOfBirth: new Date().toISOString().substring(0, 10),
+  PersonId: ""
+}
+
+
+const App: FC = () => {
+  const [defaultPerson, setDefaultPerson] = useState<IPersonState>(initialPerson)
+  
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <Container>
+      <PersonalDetails DefaultState={defaultPerson}></PersonalDetails>
+    </Container>
   );
 }
 
