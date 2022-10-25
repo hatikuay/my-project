@@ -1,16 +1,23 @@
 import React, { FC, useEffect, useState } from 'react';
 import { Button, Col, Row } from 'reactstrap';
+import FormValidation from './FormValidation';
 import { IPersonState, IProps } from './State';
 
 
 const PersonalDetails: FC<IProps> = ({ DefaultState }: IProps) => {
     const [Person, setPerson] = useState<IPersonState | any>(DefaultState)
+    const [canSave, setCanSave] = useState(false);
 
     const onChangePerson = (event: React.ChangeEvent<HTMLInputElement>) =>
     {
         const name = event.target.name;
         const value = event.target.value;
         setPerson((person: IPersonState) => ({...person, [name]: value}))
+    }
+
+    const userCanSave = (hasErrors: boolean) =>
+    {
+        setCanSave((canSave) => canSave = hasErrors);
     }
     
     return (
@@ -117,9 +124,13 @@ const PersonalDetails: FC<IProps> = ({ DefaultState }: IProps) => {
                         </Row>
                     </Col>
                 </Row>
+
                 <Row className='mb-3 mt-3'>
                     <Col > <Button size='lg' color='primary'>Save</Button> </Col>
                     <Col > <Button size='lg' color='secondary'>Clear</Button></Col>
+                </Row>
+                <Row>
+                    <FormValidation CurrentState={Person} CanSave={userCanSave}></FormValidation>
                 </Row>
             </Col>
             <Col lg="4">

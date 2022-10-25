@@ -1,4 +1,4 @@
-export type StringOrNull = string | null;
+import { StringOrNull } from "./Types"
 
 export interface IPersonState {
     FirstName: string,
@@ -7,12 +7,30 @@ export interface IPersonState {
     Address2: StringOrNull,
     Town: string,
     County: string,
-    PhoneNumber :string,
+    PhoneNumber: string,
     Postcode: string,
     DateOfBirth: StringOrNull,
     PersonId: string
 }
 
-export interface IProps{
-    DefaultState : IPersonState
+export interface IProps {
+    DefaultState: IPersonState
 }
+
+export interface IValidationProps {
+    CurrentState : IPersonState;
+    CanSave: (canSave: boolean) => void;
+}
+
+/*export class PersonState implements IPersonState {
+    public FirstName: string;
+    public LastName: string;
+    public Address1: string;
+    public Address2: StringOrNull;
+    public Town: string;
+    public County: string;
+    public PersonId: string;
+    public PhoneNumber: string;
+    public Postcode: string;
+    public DateOfBirth: StringOrNull;
+}*/
