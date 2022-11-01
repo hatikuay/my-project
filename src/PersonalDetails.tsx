@@ -2,24 +2,112 @@ import React, { FC, useEffect, useState } from 'react';
 import { Button, Col, Row } from 'reactstrap';
 import FormValidation from './FormValidation';
 import { IPersonState, IProps } from './State';
+import { PersonRecord } from './Types';
+import { Database } from './Database/Database';
+import { PersonalDetailsTableBuilder } from './PersonalDetailsTableBuilder';
+import { IRecordState, RecordState } from './RecordState';
 
 
 const PersonalDetails: FC<IProps> = ({ DefaultState }: IProps) => {
     const [Person, setPerson] = useState<IPersonState | any>(DefaultState)
+    const [people, setPeople] = useState<IPersonState[]>()
     const [canSave, setCanSave] = useState(false);
 
-    const onChangePerson = (event: React.ChangeEvent<HTMLInputElement>) =>
-    {
+    const tableBuilder: PersonalDetailsTableBuilder = new PersonalDetailsTableBuilder();
+    const dataLayer: Database<PersonRecord> = new Database(tableBuilder.Build());
+
+
+    
+    
+    const onChangePerson = (event: React.ChangeEvent<HTMLInputElement>) => {
         const name = event.target.name;
         const value = event.target.value;
-        setPerson((person: IPersonState) => ({...person, [name]: value}))
+        setPerson((person: IPersonState) => ({ ...person, [name]: value }))
     }
 
-    const userCanSave = (hasErrors: boolean) =>
-    {
+    const userCanSave = (hasErrors: boolean) => {
         setCanSave((canSave) => canSave = hasErrors);
     }
+
+    const deleteRecord = (event: any) => {
+        const person: string = event.target.value;
+        DeletePerson(person)
+
+    }
+
+    async function DeletePerson(person: string) {
+        const foundPerson = people?.find((element: IPersonState) => {
+            return element.PersonId === person;
+        })
+        if (!foundPerson) {
+            return;
+        }
+        const personState: IRecordState = new RecordState(true);
+        personState.IsActive = false;
+        const state: PersonRecord = { ...foundPerson, ...personState }
+        await dataLayer.Update(state);
+        loadPeople();
+        clear();        
+    }
+
+    const loadPeople = () => {
+        const people = new Array<PersonRecord>();
+        dataLayer.Read().then(people => {
+            setPeople(people)
+        })
+    } 
+
+    const setActive = (event : any) => {
+        const person: string = event.target.value;
+        const state = people?.find((element : IPersonState) =>{
+            return element.PersonId === person;
+        });
+        if (state){
+            setPerson(state)
+        }
+    }
+
+    const clear = () => {
+        setPerson(DefaultState)
+    }
+
+    const savePerson = () => {
+        /*if (!canSave) {
+            alert("Cannot save this record with missing or incorrect items")
+            return;
+        }*/
+        const personState : IRecordState = new RecordState(true); 
+        //personState.IsActive = true; 
+        const state : PersonRecord = {...Person, ...personState }
+        if (state.PersonId === ""){
+            state.PersonId = Date.now().toString();
+            dataLayer.Create(state);
+            loadPeople();
+            clear();
+        }
+        else {
+            dataLayer.Update(state).then(rsn => loadPeople());
+        }      
+
+    }
     
+    useEffect(() => {
+        loadPeople()
+    },[])
+
+    let peopleJSX = null;
+    if (people) {
+        peopleJSX = people.map((p) => {
+            return (
+                <Row className='mb-3 mt-3' key={p.PersonId}>
+                    <Col lg="6"> <label>{p.FirstName} {p.LastName}</label></Col>
+                    <Col lg="3"> <Button value={p.PersonId} color="primary" onClick={setActive}>Edit</Button></Col>
+                    <Col lg="3"> <Button value={p.PersonId} color="primary" onClick={deleteRecord}>Delete</Button></Col>
+                </Row>
+            )
+        })
+    }
+
     return (
         <Row>
             <Col lg="8">
@@ -134,9 +222,12 @@ const PersonalDetails: FC<IProps> = ({ DefaultState }: IProps) => {
                 </Row>
             </Col>
             <Col lg="4">
+                <Row>
+                    <Col>{peopleJSX}</Col>
+                </Row>
                 <Row className='mb-3 mt-3'>
-                    <Col > <Button size='lg' color='success'>Load</Button> </Col>
-                    <Col > <Button size='lg' color='info'>New Person</Button></Col>
+                    <Col > <Button size='lg' color='success' onClick={loadPeople}>Load</Button> </Col>
+                    <Col > <Button size='lg' color='info' onClick={savePerson}>New Person</Button></Col>
                 </Row>
             </Col>
         </Row>
