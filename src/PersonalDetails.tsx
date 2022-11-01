@@ -1,4 +1,4 @@
-import React, { FC, useEffect, useState } from 'react';
+import React, { FC, useEffect, useRef, useState } from 'react';
 import { Button, Col, Row } from 'reactstrap';
 import FormValidation from './FormValidation';
 import { IPersonState, IProps } from './State';
@@ -8,17 +8,16 @@ import { PersonalDetailsTableBuilder } from './PersonalDetailsTableBuilder';
 import { IRecordState, RecordState } from './RecordState';
 
 
+
 const PersonalDetails: FC<IProps> = ({ DefaultState }: IProps) => {
     const [Person, setPerson] = useState<IPersonState | any>(DefaultState)
     const [people, setPeople] = useState<IPersonState[]>()
     const [canSave, setCanSave] = useState(false);
+    const index = useRef(0);
 
     const tableBuilder: PersonalDetailsTableBuilder = new PersonalDetailsTableBuilder();
     const dataLayer: Database<PersonRecord> = new Database(tableBuilder.Build());
 
-
-    
-    
     const onChangePerson = (event: React.ChangeEvent<HTMLInputElement>) => {
         const name = event.target.name;
         const value = event.target.value;
@@ -47,23 +46,51 @@ const PersonalDetails: FC<IProps> = ({ DefaultState }: IProps) => {
         const state: PersonRecord = { ...foundPerson, ...personState }
         await dataLayer.Update(state);
         loadPeople();
-        clear();        
+        clear();
     }
 
-    const loadPeople = () => {
+    const loadPeople = async () => {
         const people = new Array<PersonRecord>();
-        dataLayer.Read().then(people => {
+        await dataLayer.Read().then(people => {
             setPeople(people)
         })
-    } 
+    }
 
-    const setActive = (event : any) => {
-        const person: string = event.target.value;
-        const state = people?.find((element : IPersonState) =>{
-            return element.PersonId === person;
-        });
-        if (state){
-            setPerson(state)
+    const setActive = (event: any) => {
+        if (people) {
+            const person: string = event.target.value;
+            const state = people?.find((element: IPersonState, index) => {
+                return element.PersonId === person;
+            });
+            if (state) {
+                index.current = people.indexOf(state);
+                setPerson(state)
+            }
+        }
+    }
+
+    const getNextPerson = (event: any) => {
+        if (people) {
+            if (index.current + 1 === people?.length)
+                index.current = 0;
+            else
+                index.current++;
+            const state = people[index.current]
+            if (state) {
+                setPerson(state)
+            }
+        }
+    }
+    const getPreviousPerson = (event: any) => {
+        if (people) {
+            if (index.current === 0)
+                index.current = people?.length - 1;
+            else
+                index.current--;
+            const state = people[index.current]
+            if (state) {
+                setPerson(state)
+            }
         }
     }
 
@@ -76,10 +103,10 @@ const PersonalDetails: FC<IProps> = ({ DefaultState }: IProps) => {
             alert("Cannot save this record with missing or incorrect items")
             return;
         }*/
-        const personState : IRecordState = new RecordState(true); 
+        const personState: IRecordState = new RecordState(true);
         //personState.IsActive = true; 
-        const state : PersonRecord = {...Person, ...personState }
-        if (state.PersonId === ""){
+        const state: PersonRecord = { ...Person, ...personState }
+        if (state.PersonId === "") {
             state.PersonId = Date.now().toString();
             dataLayer.Create(state);
             loadPeople();
@@ -87,13 +114,13 @@ const PersonalDetails: FC<IProps> = ({ DefaultState }: IProps) => {
         }
         else {
             dataLayer.Update(state).then(rsn => loadPeople());
-        }      
+        }
 
     }
-    
+
     useEffect(() => {
         loadPeople()
-    },[])
+    })
 
     let peopleJSX = null;
     if (people) {
@@ -212,10 +239,13 @@ const PersonalDetails: FC<IProps> = ({ DefaultState }: IProps) => {
                         </Row>
                     </Col>
                 </Row>
-
+                <Row className='mb-3 mt-3 border'>
+                    <Col > <Button size='lg' color='primary' onClick={getPreviousPerson}><i className="bi bi-arrow-left-circle-fill"></i> Previous</Button> </Col>
+                    <Col > <Button size='lg' color='primary' onClick={getNextPerson}>Next <i className="bi bi-arrow-right-circle-fill"></i></Button></Col>
+                </Row>
                 <Row className='mb-3 mt-3'>
-                    <Col > <Button size='lg' color='primary'>Save</Button> </Col>
-                    <Col > <Button size='lg' color='secondary'>Clear</Button></Col>
+                    <Col > <Button size='lg' color='primary' onClick={savePerson}>Save</Button> </Col>
+                    <Col > <Button size='lg' color='secondary' onClick={clear}>Clear</Button></Col>
                 </Row>
                 <Row>
                     <FormValidation CurrentState={Person} CanSave={userCanSave}></FormValidation>
@@ -227,7 +257,7 @@ const PersonalDetails: FC<IProps> = ({ DefaultState }: IProps) => {
                 </Row>
                 <Row className='mb-3 mt-3'>
                     <Col > <Button size='lg' color='success' onClick={loadPeople}>Load</Button> </Col>
-                    <Col > <Button size='lg' color='info' onClick={savePerson}>New Person</Button></Col>
+                    <Col > <Button size='lg' color='info' onClick={clear}>New Person</Button></Col>
                 </Row>
             </Col>
         </Row>
